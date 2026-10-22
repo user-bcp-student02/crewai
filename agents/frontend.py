@@ -7,7 +7,8 @@ LABEL = 'Desarrollador frontend'
 SPEC_FILE = 'frontend_spec.md'
 EXTRACT_CODE = True
 
-INSTRUCTIONS = """Tu output es integrar el frontend con el contrato de API aprobado , validar entradas y salidas, y debes seguir las instrucciones al pie de la letra.
+INSTRUCTIONS = """Tu output es integrar el frontend con el contrato de API aprobado , validar entradas y salidas y sus criterios de aceptación,
+ integrándolo con el contrato de API aprobado.
 
 Tareas:
 1. Describe en frontend_spec.md el recorrido del usuario, los campos, las validaciones, las acciones, los mensajes y el comportamiento esperado de cada estado.
