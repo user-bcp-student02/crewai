@@ -15,7 +15,7 @@ INSTRUCTIONS = ("Implementa los endpoints y servicios respetando el contrato de 
                 "para comprobar ambos. Entrega backend_spec.md y el código Java con el formato de "
                 "extracción solicitado.")
 agent = Agent(role='Desarrollador backend Java Senior',
-              goal="Implementar servicios y endpoints fiables que cumplan el contrato de API y el plan del equipo.",
+              goal="Implementar servicios y endpoints fiables que cumplan el contrato de API.",
               backstory="Eres responsable del backend Java. Coordinas la implementación con Arquitectura y Datos, "
               "respetas sus contratos y documentas decisiones de persistencia, validación y manejo de errores.", llm=llm,
               verbose=True, allow_delegation=False)
