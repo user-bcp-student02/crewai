@@ -13,7 +13,7 @@ INSTRUCTIONS = (
     "incluye pasos y resultados esperados. Señala riesgos o criterios no cubiertos "
     "y no afirmes que ejecutaste pruebas si no hay evidencia."
 )
-agent = Agent(role='Diseñador Senior de Pruebas de Software',
+agent = Agent(role='QA Engineer Senior de Software',
               goal="Transformar historias de usuario y criterios de aceptación en casos de prueba detallados, claros y exhaustivos.",
               backstory="""Eres un QA Engineer meticuloso con años de experiencia en metodologías ágiles. 
                 Tu superpoder es leer una historia de usuario y encontrar inmediatamente los escenarios 'edge case' (casos esquina) 
