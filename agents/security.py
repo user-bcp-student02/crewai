@@ -7,7 +7,7 @@ LABEL = 'Revisor de seguridad'
 SPEC_FILE = 'security_report.md'
 EXTRACT_CODE = False
 
-INSTRUCTIONS = """Revisa la seguridad de la funcionalidad descrita y de los archivos disponibles que la implementan o soportan. Limita el análisis a esa funcionalidad y sus criterios de aceptación; no hagas una auditoría general del repositorio. Si el código pertinente no está disponible, indícalo como limitación y no inventes archivos, ubicaciones ni evidencia.
+INSTRUCTIONS = """Usa Feature (título, descripción y criterios de aceptación) para identificar los flujos, datos y recursos involucrados. En el repositorio, localiza y revisa solo los archivos que implementan esos flujos y sus dependencias directas; sigue el recorrido desde los puntos de entrada hasta las operaciones sensibles y sus controles de acceso. No amplíes la revisión a funcionalidades no relacionadas. Si no puedes localizar el código pertinente, indícalo como limitación y no inventes archivos, ubicaciones ni evidencia.
 
 Examina, cuando aplique:
 - Autenticación y gestión de sesiones o credenciales.

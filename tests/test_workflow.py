@@ -37,6 +37,9 @@ class WorkflowTests(unittest.TestCase):
     def test_security_task_requires_evidence_based_report(self):
         task = build_tasks(FEATURE)["security"]
         for requirement in (
+            "usa feature (título, descripción y criterios de aceptación)",
+            "sus dependencias directas",
+            "no amplíes la revisión a funcionalidades no relacionadas",
             "autenticación",
             "autorización",
             "acceso a recursos de otros usuarios",
