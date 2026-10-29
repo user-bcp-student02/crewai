@@ -7,14 +7,14 @@ LABEL = 'Desarrollador backend'
 SPEC_FILE = 'backend_spec.md'
 EXTRACT_CODE = True
 
-INSTRUCTIONS = ("Implementa los endpoints y servicios del plan aprobado, respetando el contrato de API. "
+INSTRUCTIONS = ("Implementa los endpoints y servicios respetando el contrato de API. "
                 "Valida las entradas y devuelve errores coherentes. Define el acceso a datos y las "
                 "transacciones necesarias. En equipos de seis, cubre también el esquema y las "
                 "migraciones; si existe un rol de Datos, consume su contrato de persistencia sin "
                 "duplicar sus migraciones. Incluye un caso válido, un caso de error y los comandos "
                 "para comprobar ambos. Entrega backend_spec.md y el código Java con el formato de "
                 "extracción solicitado.")
-agent = Agent(role='Desarrollador backend Java',
+agent = Agent(role='Desarrollador backend Java Senior',
               goal="Implementar servicios y endpoints fiables que cumplan el contrato de API y el plan del equipo.",
               backstory="Eres responsable del backend Java. Coordinas la implementación con Arquitectura y Datos, "
               "respetas sus contratos y documentas decisiones de persistencia, validación y manejo de errores.", llm=llm,
