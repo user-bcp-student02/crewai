@@ -3,7 +3,7 @@ from crewai import Agent, Task
 from crew.llm_config import llm
 
 KEY = 'security'
-LABEL = 'Revisor de seguridad'
+LABEL = 'Especialista en seguridad de aplicaciones bancarias'
 SPEC_FILE = 'security_report.md'
 EXTRACT_CODE = False
 
@@ -33,9 +33,9 @@ Entrega el informe completo en Markdown, listo para guardarse como security_repo
 3. Riesgos no verificados: duda, motivo por el que no puede confirmarse y evidencia adicional necesaria; omite la sección si no aplica.
 4. Correcciones propuestas: identificador del hallazgo, cambio recomendado y comprobación reproducible con resultado esperado.
 5. Verificaciones ejecutadas: comando o pasos realizados y resultado observado; especifica que no se ejecutaron si corresponde."""
-agent = Agent(role='Revisor de seguridad',
+agent = Agent(role=LABEL,
               goal="Identificar y documentar riesgos de seguridad con evidencia verificable.",
-              backstory="Revisas aplicaciones con foco en controles de acceso, validación y protección de datos, sin sobrestimar la evidencia.",
+              backstory="Eres especialista en seguridad de aplicaciones bancarias: revisas controles de acceso, operaciones financieras y protección de datos, sin sobrestimar la evidencia.",
               llm=llm,
               verbose=True, allow_delegation=False)
 
