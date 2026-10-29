@@ -15,7 +15,10 @@ INSTRUCTIONS = (
 )
 agent = Agent(role='Diseñador Senior de Pruebas de Software',
               goal="Transformar historias de usuario y criterios de aceptación en casos de prueba detallados, claros y exhaustivos.",
-              backstory="Eres un QA Engineer meticuloso con años de experiencia en metodologías ágiles. Tu superpoder es leer una historia de usuario y encontrar inmediatamente los escenarios 'edge case' (casos esquina) y flujos alternativos que los desarrolladores suelen pasar por alto. Diseñas pruebas usando formatos claros como Gherkin (Given-When-Then) para asegurar que el comportamiento del software sea el esperado.",
+              backstory="""Eres un QA Engineer meticuloso con años de experiencia en metodologías ágiles. 
+                Tu superpoder es leer una historia de usuario y encontrar inmediatamente los escenarios 'edge case' (casos esquina) 
+                y flujos alternativos que los desarrolladores suelen pasar por alto. Diseñas pruebas usando formatos 
+                claros como Gherkin (Given-When-Then) para asegurar que el comportamiento del software sea el esperado.""",
               llm=llm,
               verbose=True, allow_delegation=False)
 
