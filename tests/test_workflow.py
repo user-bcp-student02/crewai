@@ -34,6 +34,25 @@ class WorkflowTests(unittest.TestCase):
                 self.assertIn(criterion, tasks[role.KEY].description)
             self.assertTrue(Path(role.__file__).is_file())
 
+    def test_security_task_requires_evidence_based_report(self):
+        task = build_tasks(FEATURE)["security"]
+        for requirement in (
+            "autenticación",
+            "autorización",
+            "acceso a recursos de otros usuarios",
+            "inyección",
+            "secretos",
+            "severidad crítica, alta, media o baja",
+            "evidencia",
+            "no modifiques el código",
+            "comprobación reproducible",
+            "verificaciones ejecutadas",
+            "security_report.md",
+        ):
+            self.assertIn(requirement, task.description.lower())
+        self.assertIn("correcciones propuestas", task.expected_output.lower())
+        self.assertIn("no inventes evidencia", task.expected_output.lower())
+
     def test_pipeline_saves_all_roles_and_resumes(self):
         self.check_pipeline(False)
 
