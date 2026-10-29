@@ -15,6 +15,14 @@ Examina, cuando aplique:
 - Validación de entradas y riesgos de inyección en consultas, comandos, rutas, plantillas o contenido.
 - Manejo de secretos y exposición de datos sensibles en respuestas, registros, errores, configuración o almacenamiento.
 
+Aplica estos lineamientos de seguridad bancaria cuando correspondan al flujo revisado:
+- Aplica mínimo privilegio y denegación por defecto; verifica autorización y titularidad del recurso en el servidor en cada operación sensible, no solo en la interfaz.
+- En operaciones financieras, verifica que importe, moneda, cuenta origen y beneficiario se validen en servidor y queden ligados a la autorización del usuario; revisa estados y transiciones, atomicidad, concurrencia, idempotencia y protección contra repetición para evitar cargos, transferencias o aprobaciones duplicadas o alteradas.
+- Protege credenciales, tokens, datos personales y financieros durante su uso y almacenamiento. Comprueba que respuestas, errores y registros no expongan secretos, credenciales, números completos de cuenta/tarjeta ni datos de otros clientes; evalúa enmascaramiento y minimización según el caso.
+- Revisa controles contra abuso relevantes al flujo, como limitación de intentos y solicitudes, enumeración de usuarios o cuentas, gestión de sesiones y reautenticación para acciones de alto riesgo, sin asumir que todos aplican a cada funcionalidad.
+- Para acciones sensibles, verifica que exista trazabilidad suficiente de actor, acción, recurso, fecha y resultado, sin registrar secretos ni datos financieros completos; considera integridad y acceso restringido a esos registros cuando haya evidencia del diseño.
+- Contrasta requisitos regulatorios o políticas internas solo cuando estén especificados o disponibles. No declares cumplimiento de PCI DSS, normativa local u otro estándar basándote únicamente en esta revisión de código.
+
 Sustenta cada riesgo confirmado con comportamiento concreto del código y cita la ruta y línea o símbolo real. Describe impacto y escenario de abuso de forma proporcionada a la evidencia. Asigna severidad crítica, alta, media o baja según el impacto y las precondiciones, explicando la justificación sin exagerar el riesgo. No incluyas valores de secretos o datos personales en el informe; redacta cualquier evidencia sensible. Separa los riesgos confirmados de los riesgos que no pudiste verificar y explica qué información falta para confirmarlos.
 
 No modifiques el código ni afirmes que aplicaste una corrección. Para cada hallazgo, incluye una corrección propuesta vinculada por identificador y una comprobación reproducible, no destructiva, con pasos o comando y resultado esperado. No afirmes que ejecutaste una comprobación si no la ejecutaste realmente. Si no ejecutaste ninguna, dilo expresamente; si no encuentras hallazgos confirmados, indícalo sin afirmar que la funcionalidad es completamente segura.
