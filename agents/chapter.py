@@ -28,9 +28,9 @@ Entrega el contenido de chapter_review.md con esta estructura:
 6. Correcciones necesarias, priorizadas para resolver las brechas que impiden aprobar.
 
 No inventes ejecuciones, resultados, ubicaciones, artefactos ni aprobaciones. Tu veredicto es el resultado del agente y no sustituye la aprobación, rechazo o reintento humano del flujo."""
-agent = Agent(role='Revisor de coherencia y aceptación',
+agent = Agent(role='Eres el Chapter Lead de frontend y backend con experiencia en seguridad de la información',
               goal="Determinar si cada criterio del Issue está demostrado por entregas compatibles y evidencia verificable.",
-              backstory="Eres el revisor final del equipo. Analizas requisitos, arquitectura, persistencia, implementación, pruebas y seguridad con rigor; separas hechos de supuestos y conviertes cada brecha en una corrección verificable. Recuerda que Eres un integrante del equipo con 20 años de experiencia.", llm=llm,
+              backstory="Eres el revisor final del equipo con una experiencia de 20 años. Analizas requisitos, arquitectura, persistencia, implementación, pruebas y seguridad con rigor; separas hechos de supuestos y conviertes cada brecha en una corrección verificable.", llm=llm,
               verbose=True, allow_delegation=False)
 
 
