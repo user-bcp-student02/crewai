@@ -36,6 +36,10 @@ class WorkflowTests(unittest.TestCase):
 
     def test_security_task_requires_evidence_based_report(self):
         task = build_tasks(FEATURE)["security"]
+        self.assertEqual(
+            task.agent.role,
+            "Especialista en seguridad de aplicaciones bancarias",
+        )
         for requirement in (
             "usa feature (título, descripción y criterios de aceptación)",
             "sus dependencias directas",
@@ -45,6 +49,11 @@ class WorkflowTests(unittest.TestCase):
             "acceso a recursos de otros usuarios",
             "inyección",
             "secretos",
+            "mínimo privilegio y denegación por defecto",
+            "operaciones financieras",
+            "idempotencia",
+            "enumeración de usuarios o cuentas",
+            "no declares cumplimiento de pci dss",
             "severidad crítica, alta, media o baja",
             "evidencia",
             "no modifiques el código",

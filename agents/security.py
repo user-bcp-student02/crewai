@@ -3,7 +3,7 @@ from crewai import Agent, Task
 from crew.llm_config import llm
 
 KEY = 'security'
-LABEL = 'Revisor de seguridad'
+LABEL = 'Especialista en seguridad de aplicaciones bancarias'
 SPEC_FILE = 'security_report.md'
 EXTRACT_CODE = False
 
@@ -15,6 +15,14 @@ Examina, cuando aplique:
 - Validación de entradas y riesgos de inyección en consultas, comandos, rutas, plantillas o contenido.
 - Manejo de secretos y exposición de datos sensibles en respuestas, registros, errores, configuración o almacenamiento.
 
+Aplica estos lineamientos de seguridad bancaria cuando correspondan al flujo revisado:
+- Aplica mínimo privilegio y denegación por defecto; verifica autorización y titularidad del recurso en el servidor en cada operación sensible, no solo en la interfaz.
+- En operaciones financieras, verifica que importe, moneda, cuenta origen y beneficiario se validen en servidor y queden ligados a la autorización del usuario; revisa estados y transiciones, atomicidad, concurrencia, idempotencia y protección contra repetición para evitar cargos, transferencias o aprobaciones duplicadas o alteradas.
+- Protege credenciales, tokens, datos personales y financieros durante su uso y almacenamiento. Comprueba que respuestas, errores y registros no expongan secretos, credenciales, números completos de cuenta/tarjeta ni datos de otros clientes; evalúa enmascaramiento y minimización según el caso.
+- Revisa controles contra abuso relevantes al flujo, como limitación de intentos y solicitudes, enumeración de usuarios o cuentas, gestión de sesiones y reautenticación para acciones de alto riesgo, sin asumir que todos aplican a cada funcionalidad.
+- Para acciones sensibles, verifica que exista trazabilidad suficiente de actor, acción, recurso, fecha y resultado, sin registrar secretos ni datos financieros completos; considera integridad y acceso restringido a esos registros cuando haya evidencia del diseño.
+- Contrasta requisitos regulatorios o políticas internas solo cuando estén especificados o disponibles. No declares cumplimiento de PCI DSS, normativa local u otro estándar basándote únicamente en esta revisión de código.
+
 Sustenta cada riesgo confirmado con comportamiento concreto del código y cita la ruta y línea o símbolo real. Describe impacto y escenario de abuso de forma proporcionada a la evidencia. Asigna severidad crítica, alta, media o baja según el impacto y las precondiciones, explicando la justificación sin exagerar el riesgo. No incluyas valores de secretos o datos personales en el informe; redacta cualquier evidencia sensible. Separa los riesgos confirmados de los riesgos que no pudiste verificar y explica qué información falta para confirmarlos.
 
 No modifiques el código ni afirmes que aplicaste una corrección. Para cada hallazgo, incluye una corrección propuesta vinculada por identificador y una comprobación reproducible, no destructiva, con pasos o comando y resultado esperado. No afirmes que ejecutaste una comprobación si no la ejecutaste realmente. Si no ejecutaste ninguna, dilo expresamente; si no encuentras hallazgos confirmados, indícalo sin afirmar que la funcionalidad es completamente segura.
@@ -25,9 +33,9 @@ Entrega el informe completo en Markdown, listo para guardarse como security_repo
 3. Riesgos no verificados: duda, motivo por el que no puede confirmarse y evidencia adicional necesaria; omite la sección si no aplica.
 4. Correcciones propuestas: identificador del hallazgo, cambio recomendado y comprobación reproducible con resultado esperado.
 5. Verificaciones ejecutadas: comando o pasos realizados y resultado observado; especifica que no se ejecutaron si corresponde."""
-agent = Agent(role='Revisor de seguridad',
+agent = Agent(role=LABEL,
               goal="Identificar y documentar riesgos de seguridad con evidencia verificable.",
-              backstory="Revisas aplicaciones con foco en controles de acceso, validación y protección de datos, sin sobrestimar la evidencia.",
+              backstory="Eres especialista en seguridad de aplicaciones bancarias: revisas controles de acceso, operaciones financieras y protección de datos, sin sobrestimar la evidencia.",
               llm=llm,
               verbose=True, allow_delegation=False)
 
