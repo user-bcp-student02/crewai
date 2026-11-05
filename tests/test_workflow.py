@@ -67,7 +67,7 @@ class WorkflowTests(unittest.TestCase):
             return f"Approved output from {key}. No model was called."
 
         with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
-            stack.enter_context(patch.dict("os.environ", {"CREWAI_INCLUDE_DATA": str(with_data).lower()}))
+            stack.enter_context(patch.dict("os.environ", {"CREWAI_INCLUDE_DATA": str(with_data).lower(), "PUBLISH_ENABLED": "false"}))
             output = Path(tmp)
             stack.enter_context(patch.object(app, "OUTPUT_DIR", output))
             stack.enter_context(

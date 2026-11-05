@@ -90,7 +90,18 @@ Los artefactos se guardan en `output/`:
 - `specs/security_report.md`: hallazgos y verificaciones de seguridad.
 - `specs/chapter_review.md`: revisión final del Chapter.
 - `backend-quarkus/` y `frontend-angular/`: código extraído y configuración de arranque.
-- `.checkpoint.json`: estado local de la ejecución.
+- `.checkpoint.json`: estado local de la ejecución (no se publica).
+
+## Publicar la fuente en el repo remoto
+
+Al aprobarse todos los pasos, `main.py` ofrece publicar `output/`:
+
+1. Pide confirmación `[s/n]`.
+2. El agente Publicador (`agents/publisher.py`) redacta título y cuerpo del PR con el veredicto del Chapter.
+3. Con `git` crea una rama `crewai/<feature>-<fecha>` en un clon temporal de `GITHUB_OWNER/GITHUB_REPO` (el mismo repo que resuelve tu MCP local), copia los archivos de texto a `source/` y la sube. El MCP local no puede escribir archivos, por eso este paso usa `git` con tus credenciales.
+4. Abre el PR con la tool `manage_prs` del MCP local (`publish.py`). Si el Chapter no aprobó, el PR queda en borrador.
+
+Configuración en `.env` (ver `.env.example`): `GITHUB_OWNER`, `GITHUB_REPO`, `PUBLISH_BASE_BRANCH` (`main`) y `PUBLISH_TARGET_DIR` (`source`). Usa `PUBLISH_ENABLED=false` para omitirlo.
 
 ## Probar la solución generada
 

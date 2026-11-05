@@ -71,6 +71,8 @@ from mcp_projects import (
     get_feature_from_item,
 )
 from hex_archetype import HEX_PROMPT_PREFIX
+from agents.publisher import agent as publisher_agent, build_task as publisher_task
+from publish import collect_files, publish_source, target_repo
 
 # ── Flag de verbosidad MCP ─────────────────────────────────────────
 # True  → muestra el detalle de cada herramienta al arrancar
@@ -1057,6 +1059,60 @@ def main():
     print("=" * 60)
     print("\nVEREDICTO del Chapter (extracto):")
     print(chapter_text[-500:] if len(chapter_text) > 500 else chapter_text)
+
+    publish_output(feature, chapter_text)
+
+
+def _parse_pr_json(raw: str) -> dict:
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    data = json.loads(match.group(0)) if match else {}
+    if not str(data.get("title", "")).strip() or not str(data.get("body", "")).strip():
+        raise ValueError("El agente Publicador no devolvió title/body")
+    return data
+
+
+def publish_output(feature: dict, chapter_text: str) -> str | None:
+    """Último paso: agente Publicador + git + MCP local (manage_prs) → PR con output/ en source/."""
+    if os.getenv("PUBLISH_ENABLED", "true").strip().lower() != "true":
+        print("\n[Publicación] PUBLISH_ENABLED=false — omitida.")
+        return None
+
+    target = os.getenv("PUBLISH_TARGET_DIR", "source").strip("/")
+    try:
+        owner, repo = target_repo()
+    except RuntimeError as exc:
+        print(f"[Publicación] ✗ {exc}")
+        return None
+    paths = [f"{target}/{p.as_posix()}" for p in collect_files(OUTPUT_DIR)]
+    print(f"\n[Publicación] {len(paths)} archivos de output/ → {owner}/{repo}/{target}/")
+    if not paths:
+        print("[Publicación] ✗ Nada que publicar.")
+        return None
+    if input("¿Crear rama y PR en el repositorio remoto? [s/n]: ").strip().lower() != "s":
+        print("[Publicación] Cancelada por el usuario.")
+        return None
+
+    approved = "VEREDICTO: APROBADO" in chapter_text.upper()
+    if not approved:
+        print("[Publicación] ⚠ El Chapter no aprobó: el PR se creará como borrador (draft).")
+
+    try:
+        pr = _parse_pr_json(run_step(publisher_agent, publisher_task(feature, paths, chapter_text)))
+    except Exception as exc:
+        print(f"[Publicación] ⚠ Redacción por agente falló ({exc}); uso plantilla.")
+        pr = {
+            "title": f"feat({target}): {feature['title']}",
+            "body": f"Fuente generada por los agentes CrewAI para **{feature['title']}**.\n\n"
+                    + "\n".join(f"- `{p}`" for p in paths)
+                    + f"\n\n{chapter_text[-1500:]}",
+        }
+    try:
+        url = publish_source(OUTPUT_DIR, feature["title"], pr["title"], pr["body"], draft=not approved)
+    except Exception as exc:
+        print(f"[Publicación] ✗ Falló: {exc}")
+        return None
+    print(f"[Publicación] ✅ PR creado: {url}")
+    return url
 
 
 if __name__ == "__main__":
