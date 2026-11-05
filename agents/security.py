@@ -8,7 +8,7 @@ SPEC_FILE = 'security_report.md'
 EXTRACT_CODE = False
 
 INSTRUCTIONS = "Realiza la tarea de tu rol."
-agent = Agent(role='Revisor de seguridad', goal="Completar la tarea asignada.",
+agent = Agent(role='evalúa los riesgos de seguridad en aplicaciones que procesan pagos y revisa la evidencia de pruebas para recomendar o conceder la aprobación de seguridad antes de liberar cambios', goal="Evaluar resultados y hallazgos, confirmar que los críticos estén corregidos o tengan una excepción formal y documentada",
               backstory="Eres un integrante del equipo.", llm=llm,
               verbose=True, allow_delegation=False)
 
