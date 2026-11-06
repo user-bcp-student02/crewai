@@ -19,9 +19,9 @@ Estructura generada en output/:
     backend_spec.md
     frontend_spec.md
     chapter_review.md
-  backend-quarkus/src/main/java/pe/bcp/<feature>/...
+  backend-quarkus/src/main/java/pe/bcp/<slice>/...   (Vertical Slice, paquete plano)
   frontend-angular/src/app/<feature>/...
-  db/schema.sql  seed.sql
+  db/<slice>/schema.sql  seed.sql
 """
 import sys
 if hasattr(sys.stdout, "reconfigure"):
@@ -60,7 +60,7 @@ import textwrap
 from pathlib import Path
 from crewai import Crew, Process
 
-from crew.workflow import build_tasks, include_data, workflow_steps
+from crew.workflow import build_tasks, include_data, workflow_steps, context_sources
 from agents.architect import agent as architect_agent
 
 # ── MCP clients ────────────────────────────────────────────────────
@@ -70,7 +70,8 @@ from mcp_projects import (
     list_project_items,
     get_feature_from_item,
 )
-from hex_archetype import HEX_PROMPT_PREFIX
+import vsa_archetype as vsa
+import frontend_archetype as fsa
 from agents.publisher import agent as publisher_agent, build_task as publisher_task
 from publish import collect_files, publish_source, target_repo
 
@@ -343,19 +344,19 @@ bootstrapApplication(AppComponent, {
 }).catch(err => console.error(err));
 """
 
-# El codigo de aplicacion (app.component.ts, app.routes.ts, el .css del
-# componente y UserRepository.java) lo genera el modelo: depende del feature.
-# Aca solo queda el andamiaje de build, que ningun agente tiene que escribir.
+# El codigo de aplicacion de cada feature (carpeta src/app/<slice>/ y UserRepository.java) lo genera el modelo.
+# Aca queda el andamiaje de build y de arranque (app.component.ts, app.routes.ts), que ningun agente escribe.
 
 
 def ensure_scaffolding(output_dir: Path) -> None:
     """
-    Escribe sólo el andamiaje de build: pom.xml y application.properties de
-    Quarkus, y package.json / angular.json / tsconfig / index.html / main.ts de
-    Angular. Nada de esto describe el feature, así que no se le pide al modelo.
+    Escribe sólo el andamiaje de build y arranque: pom.xml y application.properties
+    de Quarkus; package.json / angular.json / tsconfig / index.html / main.ts /
+    app.component.ts / app.routes.ts de Angular. Nada de esto describe el feature,
+    así que no se le pide al modelo (app.routes.ts se regenera con una ruta por slice).
 
     El código de aplicación —entidad, repositorio, servicio, componentes, rutas
-    y estilos— lo genera el agente y lo escribe extract_and_save_code(). Si el
+    del slice y estilos— lo genera el agente y lo escribe extract_and_save_code(). Si el
     agente no lo emite, el proyecto queda incompleto a propósito: es la señal
     de que el paso falló, no algo que el andamiaje deba tapar.
     """
@@ -393,6 +394,7 @@ def ensure_scaffolding(output_dir: Path) -> None:
 
     if created_front > 0:
         print(f"  🏗️ Scaffolding Frontend: generados {created_front} archivos base de Angular 17")
+    fsa.sync_routes(output_dir)
 
 
 # ── Rutas base ─────────────────────────────────────────────────────
@@ -404,25 +406,22 @@ OUTPUT_DIR.mkdir(exist_ok=True)   # lo necesita save_checkpoint()
 
 # ── Mapa archivo → ruta destino ────────────────────────────────────
 FILE_MAP = {
-    "User.java":               "backend-quarkus/src/main/java/pe/bcp/login/model/User.java",
-    "LoginRequest.java":       "backend-quarkus/src/main/java/pe/bcp/login/dto/LoginRequest.java",
-    "AuthResponse.java":       "backend-quarkus/src/main/java/pe/bcp/login/dto/AuthResponse.java",
-    "AuthService.java":        "backend-quarkus/src/main/java/pe/bcp/login/service/AuthService.java",
-    "AuthResource.java":       "backend-quarkus/src/main/java/pe/bcp/login/resource/AuthResource.java",
-    "pom.xml":                 "backend-quarkus/pom.xml",
+    "pom.xml":                  "backend-quarkus/pom.xml",
     "application.properties":  "backend-quarkus/src/main/resources/application.properties",
-    "models.ts":               "frontend-angular/src/app/auth/models.ts",
-    "auth.service.ts":         "frontend-angular/src/app/auth/auth.service.ts",
-    "auth.guard.ts":           "frontend-angular/src/app/auth/auth.guard.ts",
-    "login.component.ts":      "frontend-angular/src/app/auth/login.component.ts",
-    "login.component.html":    "frontend-angular/src/app/auth/login.component.html",
-    "auth.interceptor.ts":     "frontend-angular/src/app/core/auth.interceptor.ts",
-    "app.component.ts":        "frontend-angular/src/app/app.component.ts",
-    "app.routes.ts":           "frontend-angular/src/app/app.routes.ts",
-    "login.component.css":     "frontend-angular/src/app/auth/login.component.css",
-    "UserRepository.java":     "backend-quarkus/src/main/java/pe/bcp/login/repository/UserRepository.java",
-    "schema.sql":              "db/schema.sql",
-    "seed.sql":                "db/seed.sql",
+}
+
+# Slice activo (mismo nombre en backend y frontend, derivado solo del issue). main() lo fija al elegir la feature.
+CURRENT_SLICE = "feature"
+
+VSA_STEPS = ("architect", "data", "backend", "testing", "chapter")
+FSA_STEPS = ("architect", "frontend", "testing", "chapter")
+
+# Cada paso solo puede escribir en su propio lado: backend nunca toca Angular y frontend nunca toca Java/SQL.
+STEP_ARTIFACTS = {
+    "data": {"sql"},
+    "backend": {"java", "sql", "xml", "properties"},
+    "frontend": {"ts", "html", "css"},
+    "testing": {"java", "ts"},
 }
 
 # ── Checkpoint ─────────────────────────────────────────────────────
@@ -462,8 +461,12 @@ def save_checkpoint(data: dict) -> None:
 
 # ── Output helpers ─────────────────────────────────────────────────
 
-def extract_and_save_code(text) -> list[str]:
-    """Extrae bloques de código del output del LLM y los guarda en sus carpetas correspondientes."""
+def extract_and_save_code(text, slice_: str | None = None, step: str | None = None) -> list[str]:
+    """Extrae bloques de código del output del LLM y los guarda en sus carpetas correspondientes.
+
+    Con `step`, solo se aceptan los tipos de archivo que ese paso puede producir (STEP_ARTIFACTS).
+    """
+    slice_ = slice_ or CURRENT_SLICE
     text_str = str(getattr(text, "raw", text) or "")
     saved = []
     seen_paths = set()
@@ -506,65 +509,44 @@ def extract_and_save_code(text) -> list[str]:
             elif "INSERT INTO" in code.upper():
                 target_name = "seed.sql"
             elif re.search(r"export\s+class\s+(\w+Component)", code) or "@Component" in code:
-                target_name = "login.component.ts"
+                target_name = f"{slice_}.component.ts"
+            elif "HttpInterceptor" in code or "HttpInterceptorFn" in code:
+                target_name = f"{slice_}.interceptor.ts"
             elif re.search(r"export\s+class\s+(\w+Service)", code) or ("@Injectable" in code and "service" in code.lower()):
-                target_name = "auth.service.ts"
+                target_name = f"{slice_}.service.ts"
             elif re.search(r"export\s+class\s+(\w+Guard)", code) or "CanActivate" in code:
-                target_name = "auth.guard.ts"
-            elif "HttpInterceptor" in code or "Interceptor" in code:
-                target_name = "auth.interceptor.ts"
+                target_name = f"{slice_}.guard.ts"
             elif "export interface" in code or "export type" in code:
-                target_name = "models.ts"
+                target_name = f"{slice_}.models.ts"
             elif "<form" in code.lower() or ("<button" in code.lower() and "<div" in code.lower()):
-                target_name = "login.component.html"
+                target_name = f"{slice_}.component.html"
 
         if not target_name:
             continue
 
         # Extraer solo el nombre base del archivo
         target_name = Path(target_name.strip()).name
+        ext = target_name.rsplit(".", 1)[-1].lower()
+        allowed = STEP_ARTIFACTS.get(step) if step else None
+        if allowed is not None and ext not in allowed:
+            print(f"  ⛔ Omitido {target_name}: fuera del alcance del paso '{step}'")
+            continue
 
         # Mapeo a ruta destino
         dest_rel = FILE_MAP.get(target_name)
         if not dest_rel:
-            lname = target_name.lower()
-            if target_name.endswith(".java"):
-                if "test" in lname or "@test" in code.lower():
-                    dest_rel = f"backend-quarkus/src/test/java/pe/bcp/login/{target_name}"
-                elif "service" in lname:
-                    dest_rel = f"backend-quarkus/src/main/java/pe/bcp/login/service/{target_name}"
-                elif "resource" in lname or "controller" in lname or "@path" in code.lower():
-                    dest_rel = f"backend-quarkus/src/main/java/pe/bcp/login/resource/{target_name}"
-                elif "repository" in lname or "dao" in lname:
-                    dest_rel = f"backend-quarkus/src/main/java/pe/bcp/login/repository/{target_name}"
-                elif "request" in lname or "response" in lname or "dto" in lname:
-                    dest_rel = f"backend-quarkus/src/main/java/pe/bcp/login/dto/{target_name}"
-                elif "model" in lname or "entity" in lname or "@entity" in code.lower():
-                    dest_rel = f"backend-quarkus/src/main/java/pe/bcp/login/model/{target_name}"
-                else:
-                    # Por defecto clasificar como modelo de dominio
-                    dest_rel = f"backend-quarkus/src/main/java/pe/bcp/login/model/{target_name}"
-            elif target_name.endswith(".ts"):
-                if "interceptor" in lname:
-                    dest_rel = f"frontend-angular/src/app/core/{target_name}"
-                elif "guard" in lname:
-                    dest_rel = f"frontend-angular/src/app/auth/{target_name}"
-                elif "service" in lname:
-                    dest_rel = f"frontend-angular/src/app/auth/{target_name}"
-                elif "component" in lname:
-                    dest_rel = f"frontend-angular/src/app/auth/{target_name}"
-                else:
-                    dest_rel = f"frontend-angular/src/app/auth/{target_name}"
-            elif target_name.endswith(".html"):
-                dest_rel = f"frontend-angular/src/app/auth/{target_name}"
-            elif target_name.endswith(".css"):
-                dest_rel = f"frontend-angular/src/app/auth/{target_name}"
-            elif target_name.endswith(".sql"):
-                dest_rel = f"db/{target_name}"
-            elif target_name.endswith(".properties"):
+            if ext == "java":
+                dest_rel, code = vsa.resolve_java(target_name, code, slice_)
+            elif ext in ("ts", "html", "css"):
+                resolved = fsa.resolve_frontend(target_name, code, slice_)
+                if resolved is None:
+                    print(f"  ⛔ Omitido {target_name}: lo genera el andamiaje")
+                    continue
+                dest_rel, code = resolved
+            elif ext == "sql":
+                dest_rel = f"db/{slice_}/{target_name}"
+            elif ext == "properties":
                 dest_rel = f"backend-quarkus/src/main/resources/{target_name}"
-            elif target_name == "pom.xml":
-                dest_rel = f"backend-quarkus/{target_name}"
 
         if dest_rel and dest_rel not in seen_paths:
             seen_paths.add(dest_rel)
@@ -572,20 +554,6 @@ def extract_and_save_code(text) -> list[str]:
             # Normalización automática para garantizar compilabilidad directa
             if dest_rel.endswith("models.ts"):
                 code = re.sub(r'^(interface\s+)', r'export \1', code, flags=re.MULTILINE)
-            elif dest_rel.endswith(".java") and not re.search(r'^\s*package\s+', code, flags=re.MULTILINE):
-                if "/model/" in dest_rel:
-                    pkg = "pe.bcp.login.model"
-                elif "/service/" in dest_rel:
-                    pkg = "pe.bcp.login.service"
-                elif "/resource/" in dest_rel:
-                    pkg = "pe.bcp.login.resource"
-                elif "/repository/" in dest_rel:
-                    pkg = "pe.bcp.login.repository"
-                elif "/dto/" in dest_rel:
-                    pkg = "pe.bcp.login.dto"
-                else:
-                    pkg = "pe.bcp.login"
-                code = f"package {pkg};\n\n" + code
 
             dest = OUTPUT_DIR / dest_rel
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -847,12 +815,13 @@ def _ctx_snippet(text: str, max_chars: int = 8000) -> str:
     return text_clean[:max_chars] + "\n...(truncado para contexto)"
 
 
-def build_context_note(approved_outputs: dict) -> str:
-    """Construye una nota de contexto con los outputs aprobados anteriores."""
+def build_context_note(approved_outputs: dict, step_key: str | None = None) -> str:
+    """Construye una nota de contexto con los outputs aprobados que step_key puede leer."""
+    allowed = context_sources(step_key) if step_key else None
     parts = []
     labels = {key: label for key, label, *_ in workflow_steps(True)}
     for key, label in labels.items():
-        if key in approved_outputs:
+        if key in approved_outputs and (allowed is None or key in allowed):
             val = str(getattr(approved_outputs[key], "raw", approved_outputs[key]) or "")
             parts.append(f"### {label}\n{_ctx_snippet(val)}")
     if not parts:
@@ -946,14 +915,20 @@ def main():
     checkpoint["workflow_mode"] = mode
     checkpoint["feature_title"] = feature["title"]
 
+    # El slice se fija una vez por feature para que reanudar no cambie la ubicación del código.
+    global CURRENT_SLICE
+    CURRENT_SLICE = checkpoint.get("slice") or vsa.slice_name(feature["title"], os.getenv("CREWAI_SLICE"))
+    checkpoint["slice"] = CURRENT_SLICE
+    print(f"[VSA] Slice del backend: {CURRENT_SLICE} → paquete {vsa.slice_package(CURRENT_SLICE)}")
+
     # ── Recuperar outputs aprobados del checkpoint ────────────────────
     approved_outputs: dict = {}
     for step_key, step_data in steps_state.items():
         if step_data.get("status") == "approved":
             approved_outputs[step_key] = step_data.get("output", "")
 
-    # ── Enriquecer backstory del Chapter con brief del feature ────────
-    architect_agent.backstory += HEX_PROMPT_PREFIX + (
+    # ── Enriquecer backstory del Arquitecto con brief del feature ─────
+    architect_agent.backstory += (
         f"\n\n## Feature brief\n"
         f"**{feature['title']}**\n\n{feature['description']}\n\n"
         f"**Criterios de aceptación:** {', '.join(feature['acceptance_criteria'])}"
@@ -980,7 +955,7 @@ def main():
             if do_code:
                 saved_out = steps_state[step_key].get("output", "")
                 if saved_out:
-                    extract_and_save_code(saved_out)
+                    extract_and_save_code(saved_out, step=step_key)
             continue
 
         print(f"\n{'─'*60}")
@@ -994,8 +969,13 @@ def main():
             task_map = build_tasks(feature, with_data)
             task = task_map[step_key]
 
-            # Inyectar contexto de pasos anteriores en la descripción
-            ctx_note = build_context_note(approved_outputs)
+            if step_key in VSA_STEPS:
+                task.description += vsa.vsa_prompt(CURRENT_SLICE)
+            if step_key in FSA_STEPS:
+                task.description += fsa.fsa_prompt(CURRENT_SLICE)
+
+            # Inyectar contexto de pasos anteriores (backend y frontend solo ven el contrato del Arquitecto)
+            ctx_note = build_context_note(approved_outputs, step_key)
             if ctx_note:
                 task.description = task.description + ctx_note
 
@@ -1023,7 +1003,7 @@ def main():
                 print(f"\n✅ {step_label} aprobado. Guardando artefactos...")
                 save_spec(spec_file, output)
                 if do_code:
-                    extract_and_save_code(output)
+                    extract_and_save_code(output, step=step_key)
                 approved_outputs[step_key] = output
                 steps_state[step_key] = {"status": "approved", "output": output}
                 checkpoint["steps"] = steps_state
@@ -1053,9 +1033,12 @@ def main():
     print("✅ TODOS LOS PASOS APROBADOS")
     print("=" * 60)
     print("  output/specs/            → " + " · ".join(step[3] for step in steps))
-    print("  output/backend-quarkus/  → archivos .java extraídos")
-    print("  output/frontend-angular/ → archivos .ts/.html extraídos")
-    print("  output/db/               → .sql extraídos")
+    print("  output/backend-quarkus/  → archivos .java extraídos (slice pe.bcp." + CURRENT_SLICE + ")")
+    print("  output/frontend-angular/ → archivos .ts/.html/.css extraídos (slice src/app/" + CURRENT_SLICE + ")")
+    print(f"  output/db/{CURRENT_SLICE}/ → .sql extraídos")
+    print("=" * 60)
+    print(vsa.validate(OUTPUT_DIR / vsa.BASE_DIR)["summary"])
+    print(fsa.validate(OUTPUT_DIR / fsa.FRONT_DIR)["summary"])
     print("=" * 60)
     print("\nVEREDICTO del Chapter (extracto):")
     print(chapter_text[-500:] if len(chapter_text) > 500 else chapter_text)

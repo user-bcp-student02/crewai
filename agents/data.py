@@ -7,7 +7,9 @@ LABEL = 'Datos y persistencia'
 SPEC_FILE = 'data_spec.md'
 EXTRACT_CODE = True
 
-INSTRUCTIONS = "Define tablas, relaciones, restricciones y migraciones a partir de la arquitectura aprobada."
+INSTRUCTIONS = ("Define tablas, relaciones, restricciones y migraciones a partir de la arquitectura aprobada. "
+                "Cada slice es dueño de sus datos: las tablas llevan el prefijo del slice y no tienen claves foráneas "
+                "ni consultas hacia tablas de otro slice. El SQL se guarda en db/<slice>/.")
 agent = Agent(role=LABEL, goal="Diseñar la persistencia del requerimiento.",
               backstory="Eres el responsable de datos del equipo.", llm=llm,
               verbose=True, allow_delegation=False)

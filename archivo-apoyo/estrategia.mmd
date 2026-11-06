@@ -1,0 +1,31 @@
+graph TD
+    subgraph Frontend [React / Next.js - Feature-Based]
+        UI1[Feature: W1 Auth & Home]
+        UI2[Feature: W2 Pago Contacto]
+        UI3[Feature: W3 QR Merchant]
+    end
+
+    subgraph Middleware [Capa de Abstracción / Middleware API]
+        subgraph Slices [Vertical Slice Architecture]
+            VS1[Slice W1: Auth & Wallet Lifecycle]
+            VS2[Slice W2: P2P Transfers & Receipts]
+            VS3[Slice W3: QR Engine]
+        end
+        OpenSpec[OpenSpec / Contratos JSON & Pydantic]
+    end
+
+    subgraph External [Hackathon Environment]
+        Mocks[APIs Mocks Organizadores]
+    end
+
+    UI1 -->|REST| VS1
+    UI2 -->|REST| VS2
+    UI3 -->|REST| VS3
+
+    VS1 --> OpenSpec
+    VS2 --> OpenSpec
+    VS3 --> OpenSpec
+
+    VS1 -->|Http Client| Mocks
+    VS2 -->|Http Client| Mocks
+    VS3 -->|Http Client| Mocks

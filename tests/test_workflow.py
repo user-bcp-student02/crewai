@@ -9,6 +9,8 @@ import unittest
 from unittest.mock import patch
 
 import main as app
+import vsa_archetype as vsa
+import frontend_archetype as fsa
 from crew.workflow import ROLES, STEPS, DATA_ROLES, build_tasks, workflow_steps, include_data
 
 
@@ -98,7 +100,7 @@ class WorkflowTests(unittest.TestCase):
                     decision = next(data_decisions, ("s", ""))
                     if decision[0] != "s":
                         self.assertFalse((output / "specs/data_spec.md").exists())
-                        self.assertFalse((output / "db/migration.sql").exists())
+                        self.assertFalse((output / "db/transferfunds/migration.sql").exists())
                     return decision
                 return "s", ""
             stack.enter_context(patch.object(app, "hitl_approve", side_effect=approve))
@@ -122,9 +124,20 @@ class WorkflowTests(unittest.TestCase):
             self.assertTrue(
                 (
                     output
-                    / "backend-quarkus/src/test/java/pe/bcp/login/BalanceTest.java"
+                    / "backend-quarkus/src/test/java/pe/bcp/transferfunds/BalanceTest.java"
                 ).is_file()
             )
+            service = output / "backend-quarkus/src/main/java/pe/bcp/transferfunds/BalanceService.java"
+            self.assertIn("package pe.bcp.transferfunds;", service.read_text())
+            self.assertTrue(vsa.validate(output / "backend-quarkus")["passed"])
+            self.assertIn("pe.bcp.transferfunds", next(p for k, p in calls if k == "backend"))
+            frontend_prompt = next(p for k, p in calls if k == "frontend")
+            self.assertIn("src/app/transferfunds/", frontend_prompt)
+            self.assertNotIn("pe.bcp.login.service", frontend_prompt)
+            self.assertNotIn("BalanceService", frontend_prompt)
+            self.assertIn("Approved output from architect", frontend_prompt)
+            self.assertTrue((output / "frontend-angular/src/app/transferfunds/balance.service.ts").is_file())
+            self.assertTrue(fsa.validate(output / "frontend-angular")["passed"])
             chapter_prompt = calls[-1][1]
             self.assertIn("Coverage report", chapter_prompt)
             self.assertIn("Approved output from security", chapter_prompt)
@@ -134,7 +147,7 @@ class WorkflowTests(unittest.TestCase):
                 self.assertEqual(list(dict.fromkeys(key for key, _ in calls))[:3], ["architect", "data", "backend"])
                 self.assertIn("Approved data contract", next(prompt for key, prompt in calls if key == "backend"))
                 self.assertIn("Approved data contract", chapter_prompt)
-                self.assertTrue((output / "db/migration.sql").is_file())
+                self.assertTrue((output / "db/transferfunds/migration.sql").is_file())
             self.assertTrue(
                 all(
                     step["status"] == "approved"

@@ -20,6 +20,20 @@ def workflow_steps(with_data=False):
 
 STEPS = workflow_steps()
 
+# Backend y Frontend se construyen en paralelo conceptual: cada uno recibe solo el contrato del
+# Arquitecto (derivado del issue) y nunca la salida del otro. Los demás roles ven todo lo aprobado.
+CONTEXT_SOURCES = {
+    "architect": (),
+    "data": ("architect",),
+    "backend": ("architect", "data"),
+    "frontend": ("architect",),
+}
+
+
+def context_sources(step_key: str):
+    """Claves de pasos previos que puede leer step_key; None = todos."""
+    return CONTEXT_SOURCES.get(step_key)
+
 
 def build_tasks(feature: dict, with_data=False) -> dict:
     return {role.KEY: role.build_task(feature) for role in (DATA_ROLES if with_data else ROLES)}

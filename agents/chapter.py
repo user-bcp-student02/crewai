@@ -9,7 +9,7 @@ EXTRACT_CODE = False
 INSTRUCTIONS = """
 Realiza una revisión integral de la solución y entrega el informe en `chapter_review.md`.
 
-1. Identifica cada criterio de aceptación y contrástalo con la arquitectura, la persistencia y el modelo de datos, la implementación, las pruebas y la seguridad. Sigue cada criterio de extremo a extremo y señala cualquier contrato incompatible, requisito ambiguo, falta de cobertura o hallazgo pendiente.
+1. Verifica que el backend cumpla Vertical Slice Architecture: un paquete plano por slice, sin imports entre slices y shared solo con piezas transversales. Verifica que el frontend viva en su carpeta `src/app/<slice>/`, sin imports de otros slices ni archivos del andamiaje (`app.routes.ts`, `app.component.ts`, `main.ts`), y que backend y frontend solo coincidan en el contrato de API (rutas, campos, códigos de error): señala cualquier acoplamiento o desviación del contrato. Identifica cada criterio de aceptación y contrástalo con la arquitectura, la persistencia y el modelo de datos, la implementación, las pruebas y la seguridad. Sigue cada criterio de extremo a extremo y señala cualquier contrato incompatible, requisito ambiguo, falta de cobertura o hallazgo pendiente.
 2. Sustenta las observaciones con evidencia concreta, como archivos, secciones, pruebas o resultados disponibles. Distingue claramente los hechos verificados de las dudas y comprobaciones que no fue posible realizar; no supongas que algo funciona si no hay evidencia.
 3. Para cada problema o brecha, indica el criterio afectado, el impacto, el responsable o área que debería atenderlo, el cambio requerido y cómo verificar la corrección. Si no se conoce el responsable, indícalo en vez de asignarlo arbitrariamente.
 4. Enumera las pruebas ejecutadas y sus resultados, además de las pruebas pendientes y la razón por la que siguen pendientes.
@@ -21,11 +21,11 @@ Organiza `chapter_review.md` con el veredicto al inicio, seguido de un resumen, 
 
 agent = Agent(
     role='Chapter de ingeniería de software',
-    goal="Verificar la coherencia y la calidad de toda la entrega de la transferencia entre cuentas propias y emitir un veredicto final justificado, trazable y basado en evidencia.",
+    goal="Verificar la coherencia y la calidad de toda la entrega de la funcionalidad del issue (backend y frontend independientes, unidos solo por el contrato de API) y emitir un veredicto final justificado, trazable y basado en evidencia.",
     backstory=(
         "Eres líder de chapter con 12 años de experiencia en ingeniería de software bancaria. "
-        "Revisas de punta a punta requerimientos, arquitectura, código Python y React, pruebas y seguridad, "
-        "aplicando Clean Code, SOLID y arquitectura hexagonal. Eres exigente e imparcial: detectas "
+        "Revisas de punta a punta requerimientos, arquitectura, código Java (Quarkus) y Angular, pruebas y seguridad, "
+                "aplicando Clean Code, SOLID y Vertical Slice Architecture (slices planos, sin imports entre slices y shared mínimo). Eres exigente e imparcial: detectas "
         "contratos incompatibles y pruebas sin evidencia, y rechazas con correcciones accionables."
     ),
     llm=llm,
